@@ -1,1 +1,1237 @@
 
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistema de Ofícios — Controle Local de Word (Completo)</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- DOCX preview -->
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+  <!-- ZIP backup/restore -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #ffffff;
+      --panel: #f8fafc;
+      --muted: #64748b;
+      --text: #0f172a;
+      --border: #e2e8f0;
+      --shadow: 0 8px 30px rgba(2,6,23,.08);
+      --navy: #1e40af;
+      --emerald: #059669;
+      --danger: #dc2626;
+      --warn: #f59e0b;
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(30,64,175,.08), transparent 45%),
+                  radial-gradient(1200px 600px at 90% 0%, rgba(5,150,105,.08), transparent 45%),
+                  var(--bg);
+      color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height:1.35;
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:28px 18px 40px;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;}
+    .brand{display:flex;align-items:flex-start;gap:14px;}
+    .logo{
+      width:44px;height:44px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(30,64,175,1), rgba(5,150,105,1));
+      box-shadow: var(--shadow);
+      flex:0 0 auto;
+    }
+    h1{margin:0;font-family:Poppins, Inter, system-ui, sans-serif;font-size:20px;font-weight:700;letter-spacing:.2px;}
+    .subtitle{margin-top:4px;color:var(--muted);font-size:13px}
+    .statusbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      border:1px solid var(--border);
+      background: rgba(248,250,252,.75);
+      padding:8px 10px;border-radius:999px;
+      font-size:12px;color:var(--muted);
+      box-shadow: 0 1px 0 rgba(2,6,23,.04);
+      user-select:none;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
+    .dot.online{background:var(--emerald)}
+    .dot.offline{background:var(--danger)}
+    .mono{font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+
+    .grid{display:grid;grid-template-columns: 400px 1fr;gap:18px;align-items:start;}
+    @media (max-width: 980px){.grid{grid-template-columns: 1fr;}}
+
+    .card{
+      background: rgba(255,255,255,.85);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:16px 16px 12px;
+      background: linear-gradient(180deg, rgba(248,250,252,.95), rgba(248,250,252,.55));
+      border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .card .hd .t{font-family:Poppins, Inter, system-ui, sans-serif;font-weight:600;font-size:14px;}
+    .card .bd{padding:16px}
+
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    textarea, input{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:13px;
+      outline:none;
+      background: rgba(255,255,255,.9);
+      transition: box-shadow .2s, border-color .2s, transform .2s;
+    }
+    textarea{min-height:100px;resize:vertical}
+    textarea:focus, input:focus{
+      border-color: rgba(30,64,175,.35);
+      box-shadow: 0 0 0 4px rgba(30,64,175,.10);
+    }
+    .row{display:flex;gap:10px;align-items:center}
+    .row > *{flex:1}
+
+    .btnbar{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    button{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:600;
+      font-size:13px;
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .2s ease, border-color .2s ease;
+      display:inline-flex;align-items:center;gap:8px;
+      user-select:none;
+    }
+    button:hover{transform: translateY(-1px);box-shadow: 0 10px 24px rgba(2,6,23,.10)}
+    button:active{transform: translateY(0px);box-shadow:none}
+    button.primary{
+      background: linear-gradient(135deg, rgba(30,64,175,1), rgba(30,64,175,.92));
+      color:white;border-color: rgba(30,64,175,.35);
+    }
+    button.good{
+      background: linear-gradient(135deg, rgba(5,150,105,1), rgba(5,150,105,.92));
+      color:white;border-color: rgba(5,150,105,.35);
+    }
+    button.danger{
+      background: rgba(220,38,38,.08);
+      border-color: rgba(220,38,38,.25);
+      color: rgba(220,38,38,1);
+    }
+    button.ghost{background: transparent;}
+    button:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+
+    .hint{margin-top:10px;font-size:12px;color:var(--muted);}
+    .stats{display:grid;grid-template-columns: 1fr 1fr;gap:10px;margin-top:12px;}
+    .stat{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px 12px;
+      background: rgba(255,255,255,.65);
+    }
+    .stat .k{font-size:11px;color:var(--muted);margin-bottom:6px}
+    .stat .v{font-size:16px;font-weight:700}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.8);
+      font-size:12px;color:var(--muted);
+      white-space:nowrap;
+    }
+    .badge strong{color:var(--text)}
+    .list{display:flex;flex-direction:column;gap:12px;}
+    .item{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 10px 24px rgba(2,6,23,.06);
+      overflow:hidden;
+      animation: fadeUp .22s ease both;
+    }
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .item .top{
+      display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
+      padding:14px 14px 10px;
+      border-bottom:1px solid rgba(226,232,240,.75);
+      background: linear-gradient(180deg, rgba(248,250,252,.7), rgba(255,255,255,.7));
+    }
+    .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+    .actions button{padding:9px 10px;border-radius:12px;font-size:12px}
+    .desc{padding:12px 14px 14px;font-size:13px;color: rgba(15,23,42,.92);white-space:pre-wrap;}
+    .small{font-size:12px;color:var(--muted)}
+    .empty{
+      border:1px dashed rgba(226,232,240,1);
+      background: rgba(248,250,252,.6);
+      border-radius: var(--radius);
+      padding:22px;
+      color:var(--muted);
+      text-align:center;
+      display:none;
+    }
+    .toolbar{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;
+      width:100%;
+    }
+
+    /* Toasts */
+    .toasts{
+      position:fixed;right:16px;bottom:16px;
+      display:flex;flex-direction:column;gap:10px;
+      z-index:9999;
+      pointer-events:none;
+    }
+    .toast{
+      pointer-events:auto;
+      min-width:260px;max-width:380px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.92);
+      box-shadow: var(--shadow);
+      border-radius: 16px;
+      padding:12px;
+      animation: toastIn .18s ease both;
+    }
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .toast .k{font-weight:700;font-size:13px;margin-bottom:4px}
+    .toast .m{color:var(--muted);font-size:12px}
+    .toast.success{border-color: rgba(5,150,105,.25)}
+    .toast.error{border-color: rgba(220,38,38,.25)}
+    .toast.warn{border-color: rgba(245,158,11,.35)}
+
+    /* Modal */
+    .modalOverlay{
+      position:fixed;inset:0;
+      background: rgba(15,23,42,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9998;
+    }
+    .modal{
+      width:min(980px, 96vw);
+      max-height: 86vh;
+      overflow:hidden;
+      border-radius: 22px;
+      background: rgba(255,255,255,.96);
+      border:1px solid rgba(226,232,240,1);
+      box-shadow: 0 30px 70px rgba(2,6,23,.25);
+      display:flex;
+      flex-direction:column;
+    }
+    .modalHd{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(226,232,240,1);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background: linear-gradient(180deg, rgba(248,250,252,.95), rgba(248,250,252,.55));
+    }
+    .modalTitle{
+      font-family:Poppins, Inter, system-ui, sans-serif;
+      font-weight:700;
+      font-size:14px;
+      margin:0;
+    }
+    .modalBd{
+      padding:16px;
+      overflow:auto;
+    }
+    .docPreview{
+      border:1px solid rgba(226,232,240,1);
+      border-radius: 16px;
+      padding:14px 16px;
+      background: rgba(248,250,252,.55);
+    }
+    .docPreview h1,.docPreview h2,.docPreview h3{font-family:Poppins, Inter, system-ui, sans-serif;}
+    .modalFt{
+      padding:12px 16px;
+      border-top:1px solid rgba(226,232,240,1);
+      display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;
+      background: rgba(248,250,252,.6);
+    }
+    .fileLine{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+      color:var(--muted);font-size:12px;margin-top:10px;
+    }
+    .sep{width:1px;height:12px;background:rgba(148,163,184,.6)}
+    .selectRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .selectRow select{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:8px 10px;
+      font-size:12px;
+      background: rgba(255,255,255,.9);
+      outline:none;
+    }
+    .selectRow .mini{font-size:12px;color:var(--muted)}
+    .modeLine{
+      display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+      font-size:12px;color:var(--muted);
+    }
+    .modeLine label{margin:0;display:flex;gap:8px;align-items:center}
+    .modeLine input{width:auto}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Sistema de Ofícios — Controle Local (Completo)</h1>
+          <div class="subtitle">Importar/Visualizar/Baixar .docx • Editar/Excluir registros • Versões de Word • Backup/Restaurar (ZIP)</div>
+        </div>
+      </div>
+      <div class="statusbar">
+        <div class="pill" title="Status de conexão do navegador">
+          <span class="dot" id="netDot"></span>
+          <span id="netText">Verificando conexão…</span>
+        </div>
+        <div class="pill" title="Armazenamento local do navegador (localStorage + IndexedDB)">
+          <span>Armazenamento: <strong id="storageText">OK</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <section class="card">
+        <div class="hd">
+          <div class="t">Registrar ofício</div>
+          <div class="badge mono" title="Próximo número disponível"><strong id="nextNo">001</strong></div>
+        </div>
+        <div class="bd">
+          <div class="modeLine">
+            <span>Modo:</span>
+            <label><input type="radio" name="mode" value="auto" checked> Automático</label>
+            <label><input type="radio" name="mode" value="manual"> Manual (ofício existente)</label>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <div>
+              <label>Número</label>
+              <input id="noInput" class="mono" type="text" value="001" disabled />
+            </div>
+            <div>
+              <label>Ano</label>
+              <input id="yearInput" class="mono" type="text" />
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Descrição / Assunto</label>
+            <textarea id="descInput" placeholder="Ex.: Compra de cadeiras para sala de reunião"></textarea>
+          </div>
+
+          <div class="btnbar">
+            <button class="primary" id="saveBtn">Salvar registro</button>
+            <button class="good" id="saveImportBtn">Salvar e importar Word</button>
+            <button class="ghost" id="clearBtn">Limpar</button>
+          </div>
+
+          <div class="hint">
+            <b>Editar Word:</b> você baixa, edita no Microsoft Word e depois usa <b>Substituir Word</b> (nova versão).<br/>
+            <b>Dica:</b> use <b>Backup ZIP</b> para mover tudo (registros + arquivos) para outro PC.
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="k">Registros</div>
+              <div class="v mono" id="statCreated">0</div>
+            </div>
+            <div class="stat">
+              <div class="k">Com Word</div>
+              <div class="v mono" id="statWithFile">0</div>
+            </div>
+            <div class="stat">
+              <div class="k">Próximo número</div>
+              <div class="v mono" id="statNext">001</div>
+            </div>
+            <div class="stat">
+              <div class="k">Disponíveis</div>
+              <div class="v mono" id="statAvail">999</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT -->
+      <section class="card">
+        <div class="hd">
+          <div class="t">Lista e controle</div>
+          <div class="toolbar">
+            <input id="searchInput" type="text" placeholder="Pesquisar (número, ano, descrição, arquivo, hash…)" style="max-width:380px" />
+            <button id="backupZipBtn" class="good" title="Backup completo (registros + arquivos Word) em ZIP">Backup ZIP (com arquivos)</button>
+            <button id="restoreZipBtn" class="primary" title="Restaura um backup ZIP completo">Restaurar ZIP</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div id="list" class="list"></div>
+          <div id="empty" class="empty">Nenhum registro encontrado.</div>
+          <div class="small" style="margin-top:12px">
+            Quando você for publicar para 3 PCs compartilharem em tempo real, a gente troca o armazenamento local por nuvem (backend + banco + login).
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal">
+      <div class="modalHd">
+        <div>
+          <div class="modalTitle" id="modalTitle">Visualização do Word</div>
+          <div class="fileLine" id="modalMeta"></div>
+          <div class="selectRow" id="versionRow" style="display:none">
+            <span class="mini">Versão:</span>
+            <select id="versionSelect"></select>
+            <span class="mini" id="versionHint"></span>
+          </div>
+        </div>
+        <button class="ghost" id="modalClose">Fechar</button>
+      </div>
+      <div class="modalBd">
+        <div class="docPreview" id="modalBody">Carregando…</div>
+      </div>
+      <div class="modalFt">
+        <button id="modalDownload" class="good">Baixar Word</button>
+        <button id="modalReplace" class="primary">Substituir Word</button>
+        <button id="modalRemove" class="danger">Remover Word</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+  <input id="filePicker" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none"/>
+  <input id="zipPicker" type="file" accept=".zip,application/zip" style="display:none"/>
+
+  <script>
+    const LS_KEY = "oficios_records_v3_local_complete";
+    const DB_NAME = "oficios_db_v3_local_complete";
+    const DB_STORE = "docx_store";
+    const DB_VERSION = 1;
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function idbSet(key, value) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put(value, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    async function idbGet(key) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readonly");
+        const req = tx.objectStore(DB_STORE).get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function idbDel(key) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).delete(key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function supportsStorage() {
+      try {
+        const t = "__t";
+        localStorage.setItem(t, "1");
+        localStorage.removeItem(t);
+        return !!window.indexedDB;
+      } catch(e) { return false; }
+    }
+
+    const pad3 = (n) => String(n).padStart(3, "0");
+    const nowISO = () => new Date().toISOString();
+
+    function toast(type, title, msg, timeout=3200){
+      const wrap = document.getElementById("toasts");
+      const el = document.createElement("div");
+      el.className = "toast " + (type || "");
+      el.innerHTML = `<div class="k">${escapeHtml(title)}</div><div class="m">${escapeHtml(msg)}</div>`;
+      wrap.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        el.style.transform = "translateY(6px)";
+        el.style.transition = "opacity .18s, transform .18s";
+        setTimeout(() => el.remove(), 220);
+      }, timeout);
+    }
+
+    function escapeHtml(s){
+      return (s ?? "").toString()
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function formatDate(iso){
+      try{
+        const d = new Date(iso);
+        return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+      }catch(e){ return iso; }
+    }
+
+    function getYearDefault(){ return String(new Date().getFullYear()); }
+
+    function normalizeNoInput(v){
+      const s = (v || "").toString().trim();
+      if (!s) return null;
+      const n = Number(s);
+      if (!Number.isFinite(n)) return null;
+      if (n < 1 || n > 999) return null;
+      return Math.floor(n);
+    }
+
+    async function sha256Hex(arrayBuffer){
+      try{
+        if (!crypto?.subtle) return null;
+        const hash = await crypto.subtle.digest("SHA-256", arrayBuffer);
+        const bytes = new Uint8Array(hash);
+        return Array.from(bytes).map(b => b.toString(16).padStart(2,"0")).join("");
+      }catch(e){ return null; }
+    }
+
+    function downloadArrayBufferDocx(ab, filename){
+      const blob = new Blob([ab], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    function downloadBlob(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    // State
+    let records = [];
+
+    function loadRecords(){
+      try{
+        records = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+        if (!Array.isArray(records)) records = [];
+      }catch(e){ records = []; }
+      for(const r of records){
+        if (!Array.isArray(r.versions)) r.versions = [];
+        if (typeof r.activeV !== "number") r.activeV = r.versions.length ? r.versions[r.versions.length-1].v : null;
+      }
+    }
+    function saveRecords(){ localStorage.setItem(LS_KEY, JSON.stringify(records)); }
+
+    function usedNumbersSet(){
+      const set = new Set();
+      for(const r of records){ set.add(`${r.year}::${Number(r.numero)}`); }
+      return set;
+    }
+
+    function computeNextNumber(year){
+      const used = usedNumbersSet();
+      for(let i=1;i<=999;i++){
+        if (!used.has(`${year}::${i}`)) return i;
+      }
+      return null;
+    }
+
+    function sortRecords(){
+      records.sort((a,b) => (String(b.year).localeCompare(String(a.year))) || (a.numero - b.numero));
+    }
+
+    function updateStats(){
+      const year = (document.getElementById("yearInput").value || "").trim() || getYearDefault();
+      const next = computeNextNumber(year);
+      const created = records.length;
+      const withFile = records.filter(r => (r.versions && r.versions.length)).length;
+      const avail = 999 - (records.filter(r => String(r.year) === String(year)).length);
+
+      document.getElementById("statCreated").textContent = String(created);
+      document.getElementById("statWithFile").textContent = String(withFile);
+      document.getElementById("statNext").textContent = next ? pad3(next) : "—";
+      document.getElementById("statAvail").textContent = String(avail);
+
+      document.getElementById("nextNo").textContent = next ? pad3(next) : "—";
+    }
+
+    function matchRecord(r, q){
+      if (!q) return true;
+      const vers = (r.versions || []).map(v => `${v.name} ${v.sha256 || ""} ${formatDate(v.importedAt)}`).join(" ");
+      const hay = [
+        pad3(r.numero),
+        String(r.numero),
+        String(r.year || ""),
+        r.descricao || "",
+        vers,
+        formatDate(r.createdAt),
+        formatDate(r.updatedAt || "")
+      ].join(" ").toLowerCase();
+      return hay.includes(q.toLowerCase());
+    }
+
+    function oficioLabel(r){ return `${pad3(r.numero)}/${r.year || getYearDefault()}`; }
+
+    function currentMode(){
+      return document.querySelector('input[name="mode"]:checked')?.value || "auto";
+    }
+
+    function setMode(mode){
+      const year = (document.getElementById("yearInput").value || "").trim() || getYearDefault();
+      const next = computeNextNumber(year);
+      const noInput = document.getElementById("noInput");
+      if (mode === "auto"){
+        noInput.value = next ? pad3(next) : "—";
+        noInput.disabled = true;
+      } else {
+        noInput.disabled = false;
+        noInput.value = "";
+        noInput.placeholder = "Ex.: 12 (ou 012)";
+      }
+    }
+
+    // Rendering
+    function render(){
+      const q = (document.getElementById("searchInput").value || "").trim();
+      const list = document.getElementById("list");
+      const empty = document.getElementById("empty");
+
+      list.innerHTML = "";
+      const filtered = records.filter(r => matchRecord(r, q));
+      empty.style.display = filtered.length ? "none" : "block";
+
+      for(const r of filtered){
+        const el = document.createElement("div");
+        el.className = "item";
+        el.dataset.id = r.id;
+
+        const hasDoc = (r.versions && r.versions.length);
+        const activeMeta = hasDoc ? (r.versions.find(v => v.v === r.activeV) || r.versions[r.versions.length-1]) : null;
+
+        const metaBadges = [
+          `<span class="badge mono"><strong>${escapeHtml(oficioLabel(r))}</strong></span>`,
+          `<span class="badge">Criado: <span class="mono">${escapeHtml(formatDate(r.createdAt))}</span></span>`,
+          r.updatedAt ? `<span class="badge">Editado: <span class="mono">${escapeHtml(formatDate(r.updatedAt))}</span></span>` : ``,
+          hasDoc
+            ? `<span class="badge" title="Arquivo Word vinculado">Word: <strong class="mono">OK</strong></span>`
+            : `<span class="badge" title="Sem arquivo Word vinculado">Word: <span class="mono">—</span></span>`
+        ].filter(Boolean).join("");
+
+        const fileLine = hasDoc && activeMeta
+          ? `<div class="small">Ativo: <span class="mono">${escapeHtml(activeMeta.name)}</span> • v${activeMeta.v} • ${Math.round((activeMeta.size||0)/1024)} KB • Importado: <span class="mono">${escapeHtml(formatDate(activeMeta.importedAt))}</span></div>`
+          : `<div class="small">Nenhum Word anexado para este número.</div>`;
+
+        el.innerHTML = `
+          <div class="top">
+            <div class="meta">${metaBadges}</div>
+            <div class="actions">
+              <button class="primary" data-act="import">${hasDoc ? "Substituir Word" : "Importar Word"}</button>
+              <button ${hasDoc ? "" : "disabled"} data-act="view">Visualizar</button>
+              <button ${hasDoc ? "" : "disabled"} class="good" data-act="download">Baixar</button>
+              <button data-act="edit">Editar</button>
+              <button class="danger" data-act="delete">Excluir</button>
+            </div>
+          </div>
+          <div class="desc" data-role="desc">${escapeHtml(r.descricao || "")}</div>
+          <div style="padding:0 14px 14px">${fileLine}</div>
+        `;
+
+        el.querySelectorAll("button").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const act = btn.dataset.act;
+            if (act === "delete") return onDelete(r.id);
+            if (act === "edit") return onEdit(r.id);
+            if (act === "import") return onImport(r.id);
+            if (act === "download") return onDownload(r.id, null);
+            if (act === "view") return onView(r.id);
+          });
+        });
+
+        list.appendChild(el);
+      }
+
+      updateStats();
+    }
+
+    // CRUD
+    function findByNumeroYear(numero, year){
+      return records.find(r => Number(r.numero) === Number(numero) && String(r.year) === String(year));
+    }
+
+    function buildOrUpdateRecord({numero, year, desc}){
+      let existing = findByNumeroYear(numero, year);
+      if (existing){
+        existing.descricao = desc;
+        existing.updatedAt = nowISO();
+        saveRecords();
+        toast("success","Atualizado",`Registro ${pad3(numero)}/${year} atualizado.`);
+        render();
+        return existing;
+      }
+      const rec = {
+        id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + "_" + Math.random().toString(16).slice(2),
+        numero,
+        year,
+        descricao: desc,
+        createdAt: nowISO(),
+        updatedAt: null,
+        versions: [],
+        activeV: null,
+      };
+      records.push(rec);
+      sortRecords();
+      saveRecords();
+      toast("success","Salvo",`Registro ${pad3(numero)}/${year} criado.`);
+      render();
+      return rec;
+    }
+
+    function parseForm(){
+      const mode = currentMode();
+      const year = (document.getElementById("yearInput").value || "").trim() || getYearDefault();
+      const desc = (document.getElementById("descInput").value || "").trim();
+
+      let numero = null;
+      if (mode === "auto"){
+        const next = computeNextNumber(year);
+        if (!next){
+          toast("error","Limite atingido",`Você já usou todos os números (001–999) para ${year}.`);
+          return null;
+        }
+        numero = next;
+      } else {
+        const raw = (document.getElementById("noInput").value || "").trim();
+        const n = normalizeNoInput(raw);
+        if (!n){
+          toast("warn","Número inválido","Use um número entre 1 e 999.");
+          return null;
+        }
+        numero = n;
+      }
+      return { numero, year, desc };
+    }
+
+    function onSaveRecord(){
+      const parsed = parseForm();
+      if (!parsed) return null;
+      const rec = buildOrUpdateRecord(parsed);
+      document.getElementById("descInput").value = "";
+      if (currentMode() === "manual") document.getElementById("noInput").value = "";
+      setMode(currentMode());
+      return rec;
+    }
+
+    async function onSaveAndImport(){
+      const rec = onSaveRecord();
+      if (!rec) return;
+      await onImport(rec.id);
+    }
+
+    async function onDelete(id){
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+
+      const ok = confirm(`Excluir o registro ${oficioLabel(r)}?\n\nIsso remove TODOS os Word anexados (todas as versões).`);
+      if (!ok) return;
+
+      try{
+        if (Array.isArray(r.versions)){
+          for (const v of r.versions){
+            await idbDel(`${id}::v${v.v}`);
+          }
+        }
+      }catch(e){}
+
+      records = records.filter(x => x.id !== id);
+      saveRecords();
+      toast("success","Excluído","Registro removido.");
+      render();
+      setMode(currentMode());
+    }
+
+    function onEdit(id){
+      const card = document.querySelector(`.item[data-id="${CSS.escape(id)}"]`);
+      if (!card) return;
+
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+
+      const descEl = card.querySelector('[data-role="desc"]');
+      const isEditing = descEl.dataset.editing === "1";
+      if (isEditing) return;
+      descEl.dataset.editing = "1";
+
+      const original = r.descricao || "";
+      descEl.innerHTML = `
+        <label style="margin:0 0 8px;color:var(--muted);display:block">Editar descrição/assunto</label>
+        <textarea style="min-height:110px">${escapeHtml(original)}</textarea>
+        <div class="btnbar" style="margin-top:10px">
+          <button class="primary" data-act="saveEdit">Salvar</button>
+          <button class="ghost" data-act="cancelEdit">Cancelar</button>
+        </div>
+      `;
+
+      descEl.querySelector('[data-act="cancelEdit"]').addEventListener("click", () => {
+        descEl.dataset.editing = "0";
+        descEl.textContent = original;
+      });
+
+      descEl.querySelector('[data-act="saveEdit"]').addEventListener("click", () => {
+        const area = descEl.querySelector("textarea");
+        const val = (area.value || "").trim();
+        r.descricao = val;
+        r.updatedAt = nowISO();
+        saveRecords();
+        toast("success","Salvo","Descrição atualizada.");
+        render();
+      });
+    }
+
+    // Import / versions
+    const filePicker = document.getElementById("filePicker");
+    let pendingImportId = null;
+
+    async function onImport(id){
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+
+      const hasDoc = r.versions && r.versions.length;
+      const msg = hasDoc
+        ? `Substituir (criar nova versão) do Word do ofício ${oficioLabel(r)}?\n\nEscolha um arquivo .docx correto para este número.`
+        : `Importar Word para o ofício ${oficioLabel(r)}?\n\nEscolha um arquivo .docx correto para este número.`;
+
+      if (!confirm(msg)) return;
+
+      pendingImportId = id;
+      filePicker.value = "";
+      filePicker.click();
+    }
+
+    filePicker.addEventListener("change", async () => {
+      if (!pendingImportId) return;
+      const id = pendingImportId;
+      pendingImportId = null;
+
+      const file = filePicker.files && filePicker.files[0];
+      if (!file) return;
+
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+
+      if (!file.name.toLowerCase().endsWith(".docx")){
+        toast("warn","Arquivo inválido","Selecione um arquivo .docx.");
+        return;
+      }
+
+      try{
+        toast("warn","Importando…","Aguarde, estamos guardando o Word.");
+
+        const ab = await file.arrayBuffer();
+        const sha = await sha256Hex(ab);
+
+        const nextV = (r.versions?.length ? Math.max(...r.versions.map(v => v.v)) : 0) + 1;
+
+        await idbSet(`${id}::v${nextV}`, ab);
+
+        if (!Array.isArray(r.versions)) r.versions = [];
+        r.versions.push({
+          v: nextV,
+          name: file.name,
+          size: file.size,
+          type: file.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          sha256: sha,
+          importedAt: nowISO()
+        });
+        r.activeV = nextV;
+        r.updatedAt = nowISO();
+        saveRecords();
+
+        toast("success","Importado","Word anexado com sucesso. Você já pode visualizar e baixar.");
+        render();
+      }catch(e){
+        console.error(e);
+        toast("error","Erro","Não foi possível importar/guardar o Word.");
+      }
+    });
+
+    function activeVersionMeta(r){
+      if (!r?.versions?.length) return null;
+      return r.versions.find(v => v.v === r.activeV) || r.versions[r.versions.length - 1];
+    }
+
+    async function getVersionArrayBuffer(id, v){
+      return await idbGet(`${id}::v${v}`);
+    }
+
+    async function onDownload(id, versionOverride=null){
+      const r = records.find(x => x.id === id);
+      if (!r || !r.versions?.length) return;
+
+      const vMeta = versionOverride
+        ? r.versions.find(v => v.v === versionOverride)
+        : activeVersionMeta(r);
+
+      if (!vMeta) return;
+
+      try{
+        const ab = await getVersionArrayBuffer(id, vMeta.v);
+        if (!ab){
+          toast("warn","Arquivo não encontrado","O Word não está no armazenamento local. Importe novamente.");
+          return;
+        }
+        const filename = `OFICIO_${pad3(r.numero)}_${r.year || getYearDefault()}_v${vMeta.v}.docx`;
+        downloadArrayBufferDocx(ab, filename);
+        toast("success","Download iniciado","Arquivo Word baixado.");
+      }catch(e){
+        console.error(e);
+        toast("error","Erro","Não foi possível baixar o Word.");
+      }
+    }
+
+    // Modal
+    const modalOverlay = document.getElementById("modalOverlay");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalBody = document.getElementById("modalBody");
+    const modalMeta = document.getElementById("modalMeta");
+    const modalClose = document.getElementById("modalClose");
+    const modalDownload = document.getElementById("modalDownload");
+    const modalReplace = document.getElementById("modalReplace");
+    const modalRemove = document.getElementById("modalRemove");
+    const versionRow = document.getElementById("versionRow");
+    const versionSelect = document.getElementById("versionSelect");
+    const versionHint = document.getElementById("versionHint");
+
+    let modalId = null;
+    let modalVersion = null;
+
+    function openModal(){ modalOverlay.style.display = "flex"; modalOverlay.setAttribute("aria-hidden","false"); }
+    function closeModal(){ modalOverlay.style.display = "none"; modalOverlay.setAttribute("aria-hidden","true"); modalId = null; modalVersion = null; modalBody.innerHTML = "—"; modalMeta.innerHTML = ""; versionRow.style.display = "none"; }
+
+    modalClose.addEventListener("click", closeModal);
+    modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) closeModal(); });
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape" && modalOverlay.style.display === "flex") closeModal(); });
+
+    modalDownload.addEventListener("click", () => { if (modalId) onDownload(modalId, modalVersion); });
+    modalReplace.addEventListener("click", () => { if (modalId) onImport(modalId); });
+    modalRemove.addEventListener("click", async () => {
+      if (!modalId) return;
+      const r = records.find(x => x.id === modalId);
+      if (!r || !r.versions?.length) return;
+
+      const ok = confirm(`Remover TODOS os Word anexados do ofício ${oficioLabel(r)}?`);
+      if (!ok) return;
+
+      try{
+        for (const v of r.versions){
+          await idbDel(`${modalId}::v${v.v}`);
+        }
+        r.versions = [];
+        r.activeV = null;
+        r.updatedAt = nowISO();
+        saveRecords();
+        toast("success","Removido","Todos os Word foram removidos do registro.");
+        render();
+        closeModal();
+      }catch(e){
+        console.error(e);
+        toast("error","Erro","Não foi possível remover os Word.");
+      }
+    });
+
+    versionSelect.addEventListener("change", async () => {
+      if (!modalId) return;
+      const v = Number(versionSelect.value);
+      modalVersion = v;
+      await loadPreview(modalId, v, true);
+    });
+
+    async function loadPreview(id, v, keepOpen=false){
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+
+      const vMeta = r.versions.find(x => x.v === v);
+      if (!vMeta) return;
+
+      modalBody.textContent = "Carregando…";
+
+      const shaShort = vMeta.sha256 ? vMeta.sha256.slice(0, 12) + "…" : "—";
+      modalMeta.innerHTML = `
+        <span>Arquivo: <span class="mono">${escapeHtml(vMeta.name)}</span></span>
+        <span class="sep"></span>
+        <span>Versão: <span class="mono">v${escapeHtml(vMeta.v)}</span></span>
+        <span class="sep"></span>
+        <span>Tamanho: <span class="mono">${Math.round((vMeta.size||0)/1024)} KB</span></span>
+        <span class="sep"></span>
+        <span>Importado: <span class="mono">${escapeHtml(formatDate(vMeta.importedAt))}</span></span>
+        <span class="sep"></span>
+        <span>SHA-256: <span class="mono" title="${escapeHtml(vMeta.sha256 || "")}">${escapeHtml(shaShort)}</span></span>
+      `;
+
+      try{
+        if (!window.mammoth){
+          modalBody.innerHTML = "<b>Pré-visualização indisponível.</b><br/>A biblioteca de preview não carregou. Você ainda pode baixar o Word.";
+          return;
+        }
+        const ab = await getVersionArrayBuffer(id, v);
+        if (!ab){
+          modalBody.innerHTML = "<b>Arquivo não encontrado.</b><br/>Importe o Word novamente.";
+          return;
+        }
+        const result = await window.mammoth.convertToHtml({ arrayBuffer: ab });
+        const html = result?.value || "";
+        modalBody.innerHTML = html || "<i>Nenhum conteúdo foi convertido para visualização.</i>";
+
+        if (result?.messages?.length){
+          const warns = result.messages.slice(0,3).map(m => `<div class="small">• ${escapeHtml(m.message)}</div>`).join("");
+          modalBody.insertAdjacentHTML("beforeend", `<hr style="border:none;border-top:1px solid rgba(226,232,240,1);margin:14px 0">${warns}`);
+        }
+      }catch(e){
+        console.error(e);
+        modalBody.innerHTML = "<b>Erro ao visualizar.</b><br/>Você pode baixar o Word mesmo assim.";
+      } finally {
+        if (!keepOpen) openModal();
+      }
+    }
+
+    async function onView(id){
+      const r = records.find(x => x.id === id);
+      if (!r || !r.versions?.length) return;
+
+      modalId = id;
+      modalTitle.textContent = `Visualizar Word — Ofício ${oficioLabel(r)}`;
+
+      versionSelect.innerHTML = "";
+      const ordered = r.versions.slice().sort((a,b) => b.v - a.v);
+      for (const v of ordered){
+        const opt = document.createElement("option");
+        opt.value = String(v.v);
+        opt.textContent = `v${v.v} — ${v.name}`;
+        versionSelect.appendChild(opt);
+      }
+      const active = activeVersionMeta(r);
+      modalVersion = active ? active.v : ordered[0].v;
+      versionSelect.value = String(modalVersion);
+      versionHint.textContent = `Ativo: v${r.activeV || "—"} (você pode visualizar outras versões)`;
+      versionRow.style.display = "flex";
+
+      openModal();
+      await loadPreview(id, modalVersion, true);
+    }
+
+    // Backup/Restore ZIP
+    const zipPicker = document.getElementById("zipPicker");
+
+    async function onBackupZip(){
+      if (!window.JSZip){
+        toast("error","Falha","Biblioteca de ZIP não carregou.");
+        return;
+      }
+      if (!records.length){
+        toast("warn","Sem dados","Não há registros para backup.");
+        return;
+      }
+
+      const btn = document.getElementById("backupZipBtn");
+      btn.disabled = true;
+
+      try{
+        toast("warn","Gerando backup…","Aguarde, preparando o ZIP.");
+
+        const zip = new JSZip();
+        const meta = {
+          exportedAt: nowISO(),
+          app: "Sistema de Ofícios — Controle Local (v3)",
+          records: records
+        };
+        zip.file("records.json", JSON.stringify(meta, null, 2));
+
+        const filesFolder = zip.folder("files");
+
+        for (const r of records){
+          if (!r.versions?.length) continue;
+          for (const v of r.versions){
+            const ab = await getVersionArrayBuffer(r.id, v.v);
+            if (!ab) continue;
+            const fname = `${r.id}__v${v.v}.docx`;
+            filesFolder.file(fname, ab);
+          }
+        }
+
+        const blob = await zip.generateAsync({ type: "blob" });
+        const stamp = new Date().toISOString().slice(0,10);
+        downloadBlob(blob, `backup_oficios_completo_${stamp}.zip`);
+
+        toast("success","Backup pronto","ZIP baixado (registros + arquivos).");
+      }catch(e){
+        console.error(e);
+        toast("error","Erro","Não foi possível gerar o backup ZIP.");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function onRestoreZip(){
+      if (!window.JSZip){
+        toast("error","Falha","Biblioteca de ZIP não carregou.");
+        return;
+      }
+      if (!confirm("Restaurar um backup ZIP vai SUBSTITUIR os dados atuais neste navegador.\n\nDeseja continuar?")) return;
+      zipPicker.value = "";
+      zipPicker.click();
+    }
+
+    zipPicker.addEventListener("change", async () => {
+      const file = zipPicker.files && zipPicker.files[0];
+      if (!file) return;
+
+      const btn = document.getElementById("restoreZipBtn");
+      btn.disabled = true;
+
+      try{
+        toast("warn","Restaurando…","Lendo ZIP e carregando dados.");
+        const ab = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(ab);
+
+        const recFile = zip.file("records.json");
+        if (!recFile){
+          toast("error","ZIP inválido","Não encontrei records.json no backup.");
+          return;
+        }
+        const recText = await recFile.async("string");
+        const parsed = JSON.parse(recText);
+
+        if (!parsed?.records || !Array.isArray(parsed.records)){
+          toast("error","ZIP inválido","records.json não tem a estrutura esperada.");
+          return;
+        }
+
+        records = parsed.records;
+
+        for (const r of records){
+          if (!Array.isArray(r.versions)) r.versions = [];
+          if (typeof r.activeV !== "number") r.activeV = r.versions.length ? r.versions[r.versions.length-1].v : null;
+        }
+
+        const files = zip.folder("files");
+        if (files){
+          const names = Object.keys(files.files).filter(n => n.startsWith("files/") && n.toLowerCase().endsWith(".docx"));
+          for (const fullName of names){
+            const base = fullName.replace("files/","");
+            const m = base.match(/^(.*)__v(\d+)\.docx$/);
+            if (!m) continue;
+            const recId = m[1];
+            const v = Number(m[2]);
+            const fileAb = await zip.file(fullName).async("arraybuffer");
+            await idbSet(`${recId}::v${v}`, fileAb);
+          }
+        }
+
+        saveRecords();
+        sortRecords();
+        render();
+        setMode(currentMode());
+
+        toast("success","Restaurado","Backup restaurado com sucesso.");
+      }catch(e){
+        console.error(e);
+        toast("error","Erro","Não foi possível restaurar o ZIP.");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Network indicator
+    function updateNetworkUI(){
+      const dot = document.getElementById("netDot");
+      const txt = document.getElementById("netText");
+      const online = navigator.onLine;
+      dot.classList.remove("online","offline");
+      dot.classList.add(online ? "online" : "offline");
+      txt.textContent = online ? "Online" : "Offline";
+    }
+
+    function init(){
+      document.getElementById("storageText").textContent = supportsStorage() ? "OK" : "Limitado";
+      document.getElementById("yearInput").value = getYearDefault();
+
+      updateNetworkUI();
+      window.addEventListener("online", () => { updateNetworkUI(); toast("success","Conexão","Você está online."); });
+      window.addEventListener("offline", () => { updateNetworkUI(); toast("warn","Sem conexão","Você está offline."); });
+
+      loadRecords();
+      sortRecords();
+
+      document.querySelectorAll('input[name="mode"]').forEach(r => {
+        r.addEventListener("change", () => setMode(currentMode()));
+      });
+
+      document.getElementById("yearInput").addEventListener("input", () => setMode(currentMode()));
+
+      setMode(currentMode());
+      render();
+
+      document.getElementById("saveBtn").addEventListener("click", onSaveRecord);
+      document.getElementById("saveImportBtn").addEventListener("click", onSaveAndImport);
+      document.getElementById("clearBtn").addEventListener("click", () => {
+        document.getElementById("descInput").value = "";
+        if (currentMode() === "manual") document.getElementById("noInput").value = "";
+        toast("success","Limpo","Campos limpos.");
+      });
+
+      document.getElementById("searchInput").addEventListener("input", render);
+
+      document.getElementById("backupZipBtn").addEventListener("click", onBackupZip);
+      document.getElementById("restoreZipBtn").addEventListener("click", onRestoreZip);
+
+      toast("success","Pronto","Sistema completo carregado.");
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
