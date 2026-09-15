@@ -8,7 +8,8 @@ export type Absorption = 'COMPRADORA' | 'VENDEDORA' | 'NEUTRA'
 export interface MarketSnapshot {
   id?: string
   timestamp: string
-  source: SourceQuality
+  source: string
+  dataQuality?: SourceQuality
   sourceDelaySeconds?: number
   asset: string
   price?: number
