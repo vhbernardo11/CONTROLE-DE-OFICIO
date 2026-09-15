@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
-import { getServerSupabase } from '@/lib/supabase-server'
+
+const EDGE='https://ovfuiwvnzuodbtcnoqor.supabase.co/functions/v1'
+
 export async function GET(){
-  const supabase=getServerSupabase()
-  if(!supabase) return NextResponse.json({configured:false,signals:[]})
-  const {data,error}=await supabase.from('signals').select('*').order('ts',{ascending:false}).limit(100)
-  if(error) return NextResponse.json({configured:true,error:error.message,signals:[]},{status:500})
-  return NextResponse.json({configured:true,signals:data??[]})
+  try{
+    const r=await fetch(`${EDGE}/integraradar-signals?asset=WINV26&limit=50`,{cache:'no-store'})
+    const j=await r.json()
+    return NextResponse.json({configured:r.ok,signals:j?.signals??[],error:r.ok?undefined:j?.error},{status:r.status})
+  }catch(e){
+    return NextResponse.json({configured:false,signals:[],error:'signals_unavailable',message:String((e as Error)?.message??e)},{status:503})
+  }
 }
